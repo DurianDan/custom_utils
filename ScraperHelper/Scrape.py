@@ -48,19 +48,19 @@ class seleniumHelper():
         return checks
     
     def addOptions(self,
-                options: list|None = ["--incognito"],
+                arguments: list|None = ["--incognito"],
                 page_load_strategy:str="none"
                  ) ->None:
         '''
-        Add options, before starting driver\n
-        page_load_strategy https://www.selenium.dev/documentation/webdriver/drivers/options/\n
-        --headless : run driver without opening window\n
-        --incognito : run driver in incognito mode
+        Add `arguments`, before starting driver\n
+        `page_load_strategy` https://www.selenium.dev/documentation/webdriver/drivers/options/\n
+            --headless : run driver without opening window\n
+            --incognito : run driver in incognito mode
         '''
         # add options
         if self.checkDriver()["driverExist"]:
             raise ValueError(f"")
-        for op in options:
+        for op in arguments:
             self.options.add_argument(op)
             logging.info(f"Driver will perform option: {op}")
         logging.info(f"Driver will have page_load_strategy: {page_load_strategy}")
@@ -167,6 +167,7 @@ class driverHelper(seleniumHelper):
         
         retry_record = 0
         last_err = ""
+        logging.info(f"Trying to get the element {element_string}")
         for _ in range(retry):
             try:
                 return self.driver.find_element(by=by, value=element_string)
@@ -178,6 +179,44 @@ class driverHelper(seleniumHelper):
                 self.reopenDriver(reconnect_vpn=False,retry_count=retry_record)
             except self.network_exception as err:
                 last_err = err
+                self.reopenDriver(reconnect_vpn=True,retry_count=retry_record)
+            retry_record += 1
+            logging.error(f"Retrying getting element for the {retry_record} time(s), while handling whis error :{last_err}")
+            time.sleep(retry_interval)
+        raise ValueError(f"Cant find the element after {retry_record} retries, last error was {last_err}")
+
+    def forceGet(
+            self,
+            url:str,
+            try_refresh_before_retry:bool=False,
+            retry:int=4,
+            retry_interval: int=0
+            ):
+        '''
+        Retry until can access the desired `url`\n
+        `try_refresh_before_retry` if set to `True`, driver will refresh page before atempting reopen the whole driver,\n
+            if the desired url is available after refresh, helper won't change VPN and reopen driver\n 
+        `retry` is the number of retries\n
+        `retry_interval` seconds wait each retry
+        '''
+        if not self.checkDriver()["driverExist"]:
+            raise ValueError("Can't find element without a proper driver")
+        
+        retry_record = 0
+        last_err = ""
+        logging.info(f"Trying to reah the website {url}")
+        for _ in range(retry):
+            try:
+                self.driver.get(url)
+                return
+            except self.driver_exception + self.network_exception as err:
+                last_err = err
+                if try_refresh_before_retry:
+                    try:
+                        self.driver.refresh()
+                        return
+                    except:
+                        logging.warning("Driver cant refresh => quit and reopening driver")
                 self.reopenDriver(reconnect_vpn=True,retry_count=retry_record)
             retry_record += 1
             logging.error(f"Retrying getting element for the {retry_record} time(s), while handling whis error :{last_err}")
