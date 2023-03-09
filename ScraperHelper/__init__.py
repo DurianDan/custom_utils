@@ -1,3 +1,3 @@
-import VPN
-import Scrape
-import Debug
+from . import Scrape
+from . import VPN
+from . import Debug

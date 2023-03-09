@@ -11,3 +11,5 @@ driver = Chrome(
 driver.get("https://google.com")
 print(driver.find_element("xpath","./html/body").text)
 driver.quit()
+
+print(type(driver))

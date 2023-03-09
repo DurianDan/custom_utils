@@ -2,9 +2,9 @@
 import logging
 
 class LoggingQuickSetup():
-    def __init__(self,logging_file_path:str="") -> None:
+    def __init__(self,logging_file_path:str | None = None) -> None:
         '''
-        If `logging_file_path` is empty `""`
+        If `logging_file_path` is None
         then program will only log to the terminal, or Notebook output
         '''
         self.logging_file = logging_file_path
@@ -14,7 +14,7 @@ class LoggingQuickSetup():
                      output_format="%(process)d-%(levelname)s-%(message)s",
                      toterminal=True):
         output_handlers = []
-        if self.logging_file != "":
+        if self.logging_file:
             output_handlers.append(
                 logging.FileHandler(
                     self.logging_file,

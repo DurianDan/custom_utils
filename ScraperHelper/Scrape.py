@@ -6,30 +6,37 @@ from selenium.webdriver.chrome.service import Service
 
 # type casting in the function
 from selenium.webdriver.chrome.webdriver import WebDriver 
+
 # Error handling
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException,WebDriverException, TimeoutException
 from selenium import common
 from urllib3.exceptions import NewConnectionError, MaxRetryError
 
 # logging
-from Debug import LoggingQuickSetup,logging
+from .Debug import LoggingQuickSetup,logging
+
 
 #change VPN
-from VPN import VPN_helper
+from .VPN import VPN_helper
 
 # wait seconds between retry 
 import time
 
 class seleniumHelper():
-    def __init__(self,logging_path=None,auto_logging_setup=True) -> None:
+    def __init__(self,
+                 logging_path: str| None=None,
+                 auto_logging_setup=True) -> None:
         self.options = Options()
-        self.element_exception = {NoSuchElementException, StaleElementReferenceException}
-        self.driver_exception = {WebDriverException, TimeoutException,common.TimeoutException}
-        self.network_exception = {NewConnectionError, MaxRetryError}
+        self.element_exception = (NoSuchElementException, StaleElementReferenceException)
+        self.driver_exception = (WebDriverException, TimeoutException,common.TimeoutException)
+        self.network_exception = (NewConnectionError, MaxRetryError)
         self.driver = 0
         self.logging_path = logging_path
         if auto_logging_setup:
             LoggingQuickSetup(logging_file_path=logging_path).minimalConfig()
+    
+    def addVPN(self,vpn_provider: str):
+        self.vpn_provider = vpn_provider
 
     def checkDriver(self):
         checks = { # for future checks
@@ -37,11 +44,11 @@ class seleniumHelper():
         }
 
         if not checks["driverExist"]:
-            logging.ERROR("There isn't any running driver")
+            logging.error("There isn't any running driver")
         return checks
     
     def addOptions(self,
-                options:iter = {"--headless","--incognito"},
+                options: list|None = ["--incognito"],
                 page_load_strategy:str="none"
                  ) ->None:
         '''
@@ -51,10 +58,12 @@ class seleniumHelper():
         --incognito : run driver in incognito mode
         '''
         # add options
+        if self.checkDriver()["driverExist"]:
+            raise ValueError(f"")
         for op in options:
             self.options.add_argument(op)
-            logging.INFO(f"Driver will perform option: {op}")
-        logging.INFO(f"Driver will have page_load_strategy: {page_load_strategy}")
+            logging.info(f"Driver will perform option: {op}")
+        logging.info(f"Driver will have page_load_strategy: {page_load_strategy}")
         self.options.page_load_strategy = page_load_strategy
     
     def addFunctions(self,
@@ -67,9 +76,9 @@ class seleniumHelper():
         timeout : set limit to the time spent loading a page, raise error after timeout
         '''
         if type(self.driver) != WebDriver:
-            raise ValueError("There aren't any running-driver to maximize window or to set timeout\nYou can initialize diver using: normalDriver() or forceDriver()")
+            raise ValueError("There aren't any running-driver to maximize window or to set timeout\nYou can initialize diver using: normalCreateDriver() or forceCreateDriver()")
         if maximize:
-            logging.INFO()
+            logging.info()
             self.driver.maximize_window()
         if (type(timeout) == int and timeout > 0):
             self.driver.set_page_load_timeout (timeout)
@@ -81,26 +90,31 @@ class seleniumHelper():
         if type(self.driver) == WebDriver:
             try:
                 self.driver.quit()
-            except Exception as e:
-                logging.WARNING(f"quitRunningDriver(): {e}")
+            except Exception as err:
+                logging.warning("quitRunningDriver(): error while quitting driver:\n")
+                logging.warning(err)
+            self.driver = 0
+            logging.info("Driver has quit, and the variable 'driver' is now of type 'int', containing value 0")
         else:
-            logging.WARNING("There isn't any running driver to quit()")
-    def normalDriver(self, quit_running_driver:bool=True)-> WebDriver:
+            logging.warning("There isn't any running driver to quit()")
+    def normalCreateDriver(self, quit_running_driver:bool=True)-> WebDriver:
         if quit_running_driver: self.quitRunningDriver()
         self.driver = Chrome(
                 service=Service(ChromeDriverManager().install()),
                 options=self.options )
         return self.driver 
-    def forceDriver(self,
-                    vpn_provider:str="nordvpn",
+    def forceCreateDriver(self,
+                    vpn_provider:str | None=None,
                     reconnect_vpn:bool=True,
                     quit_running_driver:bool=True,
                     retry:int=10,
                     retry_interval:int=1
                     ):
+        if type(vpn_provider) == str and vpn_provider not in ["hotspotshield","nordvpn","protonvpn"]:
+            raise ValueError (f"{vpn_provider} is not avalid vpn provider\nProvider can only be one of hotspotshield, nordvpn, protonvpn")
         '''
         `vpn_provider` can be one of "hotspotshield"|"nordvpn"|"protonvpn"\n
-            if `vpn_provider` is empty `""`, vpn will not be reset
+            if `vpn_provider` is None, vpn will not be reset
         `retry` number of retries if the driver can't start\n
         `retry_interval` seconds wait each retry
         '''
@@ -110,14 +124,14 @@ class seleniumHelper():
         last_err = ""
         for _ in range(retry):
             try:
-                return self.normalDriver()
+                return self.normalCreateDriver()
             except self.driver_exception as err:
                 last_err = str(err)
                 retry_record += 1
                 time.sleep(retry_interval)
-                logging.ERROR(f"forceDriver(): re-opening driver for the {retry_record} time(s): {err}")
+                logging.error(f"forceCreateDriver(): re-opening driver for the {retry_record} time(s): {err}")
                 if reconnect_vpn:
-                    logging.INFO(VPN_helper(vpn_provider=vpn_provider).autoConnect())
+                    logging.info(VPN_helper(vpn_provider=vpn_provider).autoConnect())
         
         raise ValueError(f"Can't start driver after {retry} retries, last error was {last_err}")
 
@@ -131,20 +145,19 @@ class driverHelper(seleniumHelper):
         this argument is only for `logging`
         '''
         self.quitRunningDriver()
-        self.driver.quit()
-        logging.WARNING(f"Reopening driver for the {retry_count} time(s)")
-        self.forceDriver(reconnect_vpn=reconnect_vpn)
+        logging.warning(f"Reopening driver for the {retry_count} time(s)")
+        self.forceCreateDriver(reconnect_vpn=reconnect_vpn)
     
     def forceFindElement(self,
-                     by:str=By.XPATH|By.CLASS_NAME|By.ID|By.CSS_SELECTOR,
-                     element_string:str | None = None,
+                     by:By,
+                     element_string:str,
                      retry:int=10,
                      retry_interval:int=1,
                      ):
         '''
         Retry until getting the element\n
         `elment_string` : E.g. "./html/body/div\n
-        `by` : Method for the driver to get the elemen\n
+        `by` : Method for the driver to get the element: \n
         `retry` : number of retries\n
         `retry_interval` : Seconds between each retry\n
         if `vpn_provider` is not empty (empty by default), `forceFindElement()` will change vpn after each retry   
@@ -158,18 +171,15 @@ class driverHelper(seleniumHelper):
             try:
                 return self.driver.find_element(by=by, value=element_string)
             except self.element_exception as err:
-                last_err = str(err)
-                retry_record += 1
-                logging.ERROR(f"Retrying getting element for the {retry_record} time(s)")
-                time.sleep(retry_interval)
-                if self.vpn_provider != "":
-                    logging.WARNING(
-                        VPN_helper(vpn_provider=self.vpn_provider).autoConnect()
-                    )
+                last_err = err
+                pass
             except self.driver_exception as err:
-                last_err = str(err)
+                last_err = err
                 self.reopenDriver(reconnect_vpn=False,retry_count=retry_record)
             except self.network_exception as err:
-                last_err = str(err)
+                last_err = err
                 self.reopenDriver(reconnect_vpn=True,retry_count=retry_record)
+            retry_record += 1
+            logging.error(f"Retrying getting element for the {retry_record} time(s), while handling whis error :{last_err}")
+            time.sleep(retry_interval)
         raise ValueError(f"Cant find the element after {retry_record} retries, last error was {last_err}")

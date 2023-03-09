@@ -1,8 +1,11 @@
 import subprocess
+from typing import Literal
+
+_VPN_PROVIDERS = Literal["hotspotshield", "nordvpn","protonvpn"]
 
 class VPN_helper():
     def __init__(self,
-                 vpn_provider:str="hotspotshield"|"nordvpn"|"protonvpn") -> None:
+                 vpn_provider:_VPN_PROVIDERS) -> None:
         self.provider = vpn_provider
     
     def autoConnect(self,ouput=True):
@@ -23,7 +26,7 @@ class VPN_helper():
 class formatVPNmessage():
     def __init__(self,
                  message:bytes,
-                 vpn_provider:str="hotspotshield"|"nordvpn"|"protonvpn"
+                 vpn_provider:_VPN_PROVIDERS
                  ) -> None:
         self.provider = vpn_provider
         self.message = message.decode("utf8")
