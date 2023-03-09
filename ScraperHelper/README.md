@@ -9,7 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 
 options = Options()
-options.add_argument("--healess")
+options.add_argument("--headless")
 options.add_argument("--incognito")
 
 driver = Chrome(
@@ -20,7 +20,7 @@ driver = Chrome(
 driver.get("https://google.com")
 driver.find_element(By.XPATH, "./html/body")
 ```
-- Acheiving the same result, using ScraperHelper
+- Achieving the same result, using ScraperHelper
 ```python
 from ScraperHelper.Scrape import *
 
