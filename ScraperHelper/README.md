@@ -37,7 +37,8 @@ helper.driver.get("https://google.com")
 
 helper.findForceElement(By.XPATH, "./html/body")
 ```
-## 2. Avoid blocking, using your VPN subscription
+## 2. Avoid blocking, using your VPN subscription 
+**only support **NordVPN**, more **VPN provider** will be updated in the future*
 ```python
 from ScraperHelper.Scrape import *
 helper = driverHelper()
