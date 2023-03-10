@@ -35,10 +35,10 @@ helper.addOptions(
 helper.driver.get("https://google.com") 
 # helper.driver behaves axactly like Selenium Chrome driver 
 
-helper.findForceElement(By.XPATH, "./html/body")
+helper.forceFindElement(By.XPATH, "./html/body")
 ```
 ## 2. Avoid blocking, using your VPN subscription 
-**only support **NordVPN**, more **VPN provider** will be updated in the future*
+**only support **NordVPN**, more **VPN providers** will be updated in the future*
 ```python
 from ScraperHelper.Scrape import *
 helper = driverHelper()
@@ -48,7 +48,7 @@ helper.forceGet( "https://google.com",retry=8 )
 # retry up to 8 times, until the desired website is reached
 # each retry, `helper` will change VPN, quit and reopen driver or refresh page
 
-helper.findForceElement(By.XPATH, "./html/body")
+helper.forceFindElement(By.XPATH, "./html/body")
 ```
 ## 3. Easy logging setup: save all scraping process in a **.log** file  
 [*using logging package](https://realpython.com/python-logging/)
@@ -62,5 +62,5 @@ helper = driverHelper(
 # ...and save in the text file log_file.log
 
 helper.forceGet( "https://google.com" )
-helper.findForceElement(By.XPATH, "./html/body")
+helper.forceFindElement(By.XPATH, "./html/body")
 ```
