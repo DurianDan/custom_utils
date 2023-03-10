@@ -1,4 +1,4 @@
-# This package help you use selenium to scrape the web more easily
+# This package helps you use selenium to scrape the web more easily
 ## 1. Minimal Selenium code
 - In a normal selenium project
 ```python
@@ -36,6 +36,9 @@ helper.driver.get("https://google.com")
 # helper.driver behaves axactly like Selenium Chrome driver 
 
 helper.forceFindElement(By.XPATH, "./html/body")
+# a special driver.find_element() method
+# automatically loop try-except to catch the loading element
+# It also reopen the driver if encountered with network exception/error
 ```
 ## 2. Avoid blocking, using your VPN subscription 
 **only support **NordVPN**, more **VPN providers** will be updated in the future*
